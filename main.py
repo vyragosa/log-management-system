@@ -24,6 +24,7 @@ def main():
     generate_logs(log_manager, 1000)
     print(f"Успешно добавлены логи")
     log_manager.export_logs("logs")
+    log_manager.print_error_logs(user_id=1)
 
 
 if __name__ == "__main__":

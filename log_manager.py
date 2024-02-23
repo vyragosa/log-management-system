@@ -23,10 +23,10 @@ class LogManager:
                 session.add(log)
                 session.commit()
 
-                if log_level == 'error' and user_id:
-                    error_count = session.query(Log).filter(Log.user_id == user_id, Log.log_level == 'error').count()
-                    if error_count % 10 == 0:
-                        self.__send_notification(user_id, message)
+                # if log_level == 'error' and user_id:
+                #     error_count = session.query(Log).filter(Log.user_id == user_id, Log.log_level == 'error').count()
+                #     if error_count % 10 == 0:
+                #         self.__send_notification(user_id, message)
 
             except Exception as e:
                 session.rollback()
@@ -67,10 +67,27 @@ class LogManager:
             json.dump(logs_data, file, indent=4)
 
     def clear_logs(self):
-        session = self.session()
-        session.query(Log).delete()
-        session.commit()
-        session.close()
+        with self.session() as session:
+            session.query(Log).delete()
+            session.commit()
+
+    def __get_errors_logs(self, user_id):
+        with self.session() as session:
+            try:
+                query = session.query(Log).filter(Log.user_id == user_id, Log.log_level == 'error')
+                logs = query.all()
+                return [logs[i] for i in range(len(logs)) if (i + 1) % 10 == 0]
+            except Exception as e:
+                raise e
+
+    def print_error_logs(self, user_id):
+        tenth_error_logs = self.__get_errors_logs(user_id)
+        if tenth_error_logs:
+            for log in tenth_error_logs:
+                print(f"Timestamp: {log.timestamp.strftime('%Y-%m-%d %H:%M:%S')}, "
+                      f"Message: {log.message}")
+        else:
+            print(f"Ошибок по {user_id} не найдено.")
 
     @staticmethod
     def __send_notification(user_id, message):
