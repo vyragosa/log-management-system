@@ -10,6 +10,6 @@ class Log(Base):
     __tablename__ = 'logs'
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=datetime.datetime.now)
-    user_id = Column(String)
+    user_id = Column(Integer)
     log_level = Column(String)
     message = Column(String)
