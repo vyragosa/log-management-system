@@ -1,6 +1,6 @@
-import datetime
 import random
 import string
+
 from log_manager import LogManager
 
 
@@ -24,7 +24,10 @@ def main():
     generate_logs(log_manager, 1000)
     print(f"Успешно добавлены логи")
     log_manager.export_logs("logs")
-    log_manager.print_error_logs(user_id=1)
+    print(log_manager.get_error_logs(user_id=1))
+    print(log_manager.display_logs(user_id=11))
+    print(log_manager.add_log(user_id=1, log_level="d", message="123"))
+
 
 
 if __name__ == "__main__":

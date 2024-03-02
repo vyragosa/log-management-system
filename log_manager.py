@@ -19,20 +19,27 @@ class LogManager:
             try:
                 if timestamp is None:
                     timestamp = datetime.datetime.now()
+
+                if log_level not in ['info', 'warning', 'error']:
+                    raise ValueError("Некорректный уровень лога. Уровень должен быть 'info', 'warning' или 'error'.")
+
                 log = Log(user_id=user_id, log_level=log_level, message=message, timestamp=timestamp)
                 session.add(log)
                 session.commit()
 
-                # if log_level == 'error' and user_id:
-                #     error_count = session.query(Log).filter(Log.user_id == user_id, Log.log_level == 'error').count()
-                #     if error_count % 10 == 0:
-                #         self.__send_notification(user_id, message)
+                if log_level == 'error' and user_id:
+                    error_count = session.query(Log).filter(Log.user_id == user_id, Log.log_level == 'error').count()
+                    if error_count % 10 == 0:
+                        self.__send_notification(user_id, message)
 
+                return 'Лог добавлен'
+            except ValueError as ev:
+                return ev.args[0]
             except Exception as e:
                 session.rollback()
                 raise e
 
-    def get_logs(self, user_id=None, log_level=None, start_time=None, end_time=None):
+    def __get_logs(self, user_id=None, log_level=None, start_time=None, end_time=None):
         with self.session() as session:
             try:
                 query = session.query(Log)
@@ -58,7 +65,7 @@ class LogManager:
             filename += '.json'
 
         filepath = os.path.join(reports_dir, filename)
-        logs = self.get_logs()
+        logs = self.__get_logs()
         logs_data = [{'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                       'user_id': log.user_id,
                       'log_level': log.log_level,
@@ -80,15 +87,22 @@ class LogManager:
             except Exception as e:
                 raise e
 
-    def print_error_logs(self, user_id):
+    def get_error_logs(self, user_id):
         tenth_error_logs = self.__get_errors_logs(user_id)
         if tenth_error_logs:
-            for log in tenth_error_logs:
-                print(f"Timestamp: {log.timestamp.strftime('%Y-%m-%d %H:%M:%S')}, "
-                      f"Message: {log.message}")
+            return [log.message for log in tenth_error_logs]
         else:
-            print(f"Ошибок по {user_id} не найдено.")
+            return f"Ошибок по {user_id} не найдено."
 
+    def display_logs(self, user_id=None, log_level=None, start_time=None, end_time=None):
+        logs = self.__get_logs(user_id=user_id, log_level=log_level, start_time=start_time, end_time=end_time)
+        if logs:
+            return [{'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                     'user_id': log.user_id,
+                     'log_level': log.log_level,
+                     'message': log.message} for log in logs]
+        else:
+            return "Не найдено логов по указанным критериям."
     @staticmethod
     def __send_notification(user_id, message):
-        print(f"Уведомление пользователя с {user_id} о 10 по счету ошибке: {message}")
+        print(f"Уведомление пользователя с {user_id} о 10 по счету ошибке")
